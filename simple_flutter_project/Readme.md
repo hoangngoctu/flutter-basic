@@ -83,7 +83,7 @@ Lưu ý: Lệnh trên sẽ tạo một dự án Flutter mới trong thư mục f
 
   ## Bước 5: Đẩy dự án mã nguồn lên GitHub và quản lý mã nguồn
  - Chọn `Source Control` ở thanh Side Bar và chọn `Publish to GitHub`.
- - Quản lý mã nguồn bằng cách commit, push (Sync Changes...), pull,... từ cửa sổ `Source Control`. Lưu ý: Nếu bạn chưa có Git thì hãy cài Git (tham khảo google). Các bạn cũng cần một chút kiến thức sử dụng GitHub từ google cũng khá là dễ.
+ - Quản lý mã nguồn bằng cách commit, push (Sync Changes...), pull,... từ cửa sổ `Source Control`. Lưu ý: Nếu bạn chưa có Git thì hãy cài Git (tham khảo google). Cũng cần một chút kiến thức sử dụng GitHub từ google cũng khá là dễ.
 
  ### Bước 6:Phát triển backend và kiểm thử
 
