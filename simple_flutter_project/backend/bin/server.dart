@@ -17,7 +17,7 @@ final _headers = {'Content-Type': 'aplication/json'};
 
 /// Xử lý các yêu cầu dẫn đến các đường dẫn không được định nghĩa(404 Not Found)
 Response _notFoundHandler(Request req) {
-  return Response.notFound('Không tìm thấy đươngf dẫn "$req.url" trên sever');
+  return Response.notFound('Không tìm thấy đường dẫn "${req.url}" trên server');
 }
 
 ///Hàm sử lý các yêu cầu gốc tại đường dẫn "/"
