@@ -1,14 +1,16 @@
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
-///Hàm main là điểm bắt đầu của ứng dụng
+/// Hàm main là điểm bắt đầu của ứng dụng
 void main() {
-  runApp(const MainApp()); //Chạy ứng dụng với Widget MainApp
+  runApp(const MainApp()); // Chạy ứng dụng với Widget MainApp
 }
 
-/// Widget MainApp là widget gốc của ứng dụng, sử dụng một StatelessWidget
+/// Widget MainApp là widget gốc của ứng dụng
 class MainApp extends StatelessWidget {
   const MainApp({super.key});
 
@@ -22,9 +24,7 @@ class MainApp extends StatelessWidget {
   }
 }
 
-///Widget MyHoamePage là trang chính của ứng dụng,sử dụng StatefulWidget
-///để quản lý trạng thái do có nội dung cần tahy đổi trên trang này
-
+/// Widget MyHomePage là trang chính của ứng dụng
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
 
@@ -32,33 +32,45 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-//Lớp State cho MyHomePage
+// Lớp State cho MyHomePage
 class _MyHomePageState extends State<MyHomePage> {
-  ///Controller để lấy dữ liêu từ Widget TextField
+  /// Controller để lấy dữ liệu từ Widget TextField
   final controller = TextEditingController();
 
   /// Biến để lưu thông điệp phản hồi từ server
   String responseMessage = '';
 
-  ///Hàm để gửi tệp lên tới sever
-  Future<void> sendName() async {
-    //Lấy tên từ TextFiled
-    final name = controller.text;
-    //Sau khi lấy được tên hiển thị xóa nội dung trong controller
-    controller.clear();
+  /// Sử dụng địa chỉ IP thích hợp cho backend
+  String getBackendUrl() {
+    if (kIsWeb) {
+      return 'http://localhost:5000'; // Đổi cổng từ 8080 sang 5000
+    } else if (Platform.isAndroid) {
+      return 'http://10.0.2.2:5000'; // cho emulator
+      // return 'http://192.168.1.x:5000'; // cho thiết bị thật khi truy cập qua LAN
+    } else {
+      return 'http://localhost:5000'; // Đổi cổng từ 8080 sang 5000
+    }
+  }
 
-    //Endpoint submit của sever
-    final url = Uri.parse('http://localhost:3000/api/v1/submit');
+  /// Hàm để gửi tên lên server
+  Future<void> sendName() async {
+    final name = controller.text; // Lấy tên từ TextField
+    controller.clear(); // Xóa nội dung trong controller
+    final backendUrl = getBackendUrl();
+
+    // Endpoint submit của server
+    final url = Uri.parse('$backendUrl/api/v1/submit');
     try {
-      //Gửi yêu cầu POST tới sever
-     final response = await http
+      // Gửi yêu cầu POST tới server
+      final response = await http
           .post(
             url,
             headers: {'Content-Type': 'application/json'},
             body: json.encode({'name': name}),
           )
           .timeout(const Duration(seconds: 10));
-          // Kiểm tra nếu phản hồi có nội dung
+
+      // Kiểm tra nếu phản hồi có nội dung
       if (response.body.isNotEmpty) {
         // Giải mã phản hồi từ server
         final data = json.decode(response.body);
@@ -73,9 +85,8 @@ class _MyHomePageState extends State<MyHomePage> {
           responseMessage = 'Không nhận được phản hồi từ server';
         });
       }
-
     } catch (e) {
-      //Xử lý lỗi kết nối hoặc lỗi khác
+      // Xử lý lỗi kết nối hoặc lỗi khác
       setState(() {
         responseMessage = 'Đã xảy ra lỗi: ${e.toString()}';
       });
@@ -103,7 +114,7 @@ class _MyHomePageState extends State<MyHomePage> {
             Text(
               responseMessage,
               style: Theme.of(context).textTheme.titleLarge,
-            )
+            ),
           ],
         ),
       ),

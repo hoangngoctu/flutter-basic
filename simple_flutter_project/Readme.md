@@ -104,30 +104,22 @@ final _router = Router(notFoundHandler: _notFoundHandler)
   ..post('/api/v1/submit', _submitHandler);
 
 /// Header mặc định cho dữ liệu trả về dưới dạng JSON
-final _headers = {'Content-Type': 'aplication/json'};
+final _headers = {'Content-Type': 'application/json'};
 
-/// Xử lý các yêu cầu dẫn đến các đường dẫn không được định nghĩa(404 Not Found)
+/// Xử lý các yêu cầu dẫn đến các đường dẫn không được định nghĩa (404 Not Found)
 Response _notFoundHandler(Request req) {
-  return Response.notFound('Không tìm thấy đươngf dẫn "$req.url" trên sever');
+  return Response.notFound('Không tìm thấy đường dẫn "${req.url}" trên server');
 }
 
-///Hàm sử lý các yêu cầu gốc tại đường dẫn "/"
-///
-///Trả về một phản hồi với thông điệp "Hello,World!" dưới dạng Json
-///
-///`reg`:Đối tượng yêu cầu từ cilent
-///
-///Trả về:Một đối tượng `Response`với mã trạng thái 200 và nội dung JSON
-
+/// Hàm xử lý các yêu cầu gốc tại đường dẫn "/"
 Response _rootHandler(Request req) {
-  // Constructor `ok` của Response có statusCode là 200
   return Response.ok(
-    json.encode({'mesage': 'Hello, World!'}),
+    json.encode({'message': 'Hello, World!'}),
     headers: _headers,
   );
 }
 
-///Hàm xử lý yêu càu tại đường dẫn `/api/v1/check`
+/// Hàm xử lý yêu cầu tại đường dẫn `/api/v1/check`
 Response _checkHandler(Request req) {
   return Response.ok(
     json.encode({'message': 'Chào mừng bạn đến với ứng dụng web di động'}),
@@ -142,58 +134,38 @@ Response _echoHandler(Request request) {
 
 Future<Response> _submitHandler(Request req) async {
   try {
-    ///Đọc payload từ request
-
+    /// Đọc payload từ request
     final payload = await req.readAsString();
 
-    //Giải mã JSON từ payload
+    // Giải mã JSON từ payload
     final data = json.decode(payload);
 
-    //Lấy giá trị 'name' từ data,ép kiểu về String? nếu có
+    // Lấy giá trị 'name' từ data
     final name = data['name'] as String?;
 
-    //Kiểm tra 'name hợp lệ'
+    // Kiểm tra 'name' hợp lệ
     if (name != null && name.isNotEmpty) {
-      //Tạo phản hồi chào mừng
+      // Tạo phản hồi chào mừng
       final response = {'message': 'Chào mừng $name'};
 
-      //Trả về phản hồi với satatusCode 200 với nội dung JSON
       return Response.ok(
         json.encode(response),
         headers: _headers,
       );
     } else {
-      //Tạo phản hồi yêu cầu cug cấp tên
-      final response = {'message': 'Sever không nhận được tên của bạn.'};
-      //Trả về phản hôi với statusCode 400 và nội dung JSON
+      final response = {'message': 'Server không nhận được tên của bạn.'};
       return Response.badRequest(
         body: json.encode(response),
         headers: _headers,
       );
     }
   } catch (e) {
-    ///Xử lý ngoại lệ khi giải mã JSON
-    final response = {'message': 'Yêu cầu không hợp lệ  . Lỗi ${e.toString()}'};
-    //Trả về phản hôi với statusCode 400
+    final response = {'message': 'Yêu cầu không hợp lệ. Lỗi: ${e.toString()}'};
     return Response.badRequest(
       body: json.encode(response),
       headers: _headers,
     );
   }
-}
-
-void main(List<String> args) async {
-  // Use any available host or container IP (usually `0.0.0.0`).
-  final ip = InternetAddress.anyIPv4;
-
-  // Configure a pipeline that logs requests.
-  final handler =
-      Pipeline().addMiddleware(logRequests()).addHandler(_router.call);
-
-  // For running in containers, we respect the PORT environment variable.
-  final port = int.parse(Platform.environment['PORT'] ?? '3000');
-  final server = await serve(handler, ip, port);
-  print('Server listening on port ${server.port}');
 }
 
  ```
@@ -212,13 +184,12 @@ void main(List<String> args) async {
     requestHandler: (req) {
       if (req.method == 'OPTIONS') {
         return Response.ok('', headers: {
-          //Cho phép mọi nguồn truy cập (trong môi trường dev). Trong môi trường production chúng ta nên thay * bằng domain cụ thể.
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, HEAD',
           'Access-Control-Allow-Headers': 'Content-Type, Authorization',
         });
       }
-      return null; //Tiếp tục sử lý các yêu cầu khác
+      return null; // Tiếp tục xử lý các yêu cầu khác
     },
     responseHandler: (res) {
       return res.change(headers: {
@@ -229,40 +200,40 @@ void main(List<String> args) async {
     },
   );
 
-  // Cấu hình một pipeline để logs các requests và middleware
   final handler = Pipeline()
-      .addMiddleware(corsHeader) // Thêm middleware xử lý CORS
+      .addMiddleware(corsHeader)
       .addMiddleware(logRequests())
       .addHandler(_router.call);
 
   // Để chạy trong các container, chúng ta sẽ sử dụng biến môi trường PORT.
   // Nếu biến môi trường không được thiết lập nó sẽ sử dụng giá trị từ biến
-  // môi trường này; nếu không, nó sẽ sử dụng giá trị mặc định là 8080.
-  //Tại đây với máy đang sử dụng phải đổi giá trị là 3000
-  final port = int.parse(Platform.environment['PORT'] ?? '3000');
-
-  // Khởi chạy server tại địa chỉ và cổng chỉ định
+  // môi trường này sử dụng giá trị là 5000; nếu không, nó sẽ sử dụng giá trị mặc định là 8080.
+  final port = int.parse(Platform.environment['PORT'] ?? '5000');
+// Khởi chạy server tại địa chỉ và cổng chỉ định
   final server = await serve(handler, ip, port);
   print('Server đang chạy tại http://${server.address.host}:${server.port}');
 }
 
+
 ```
 
- ### Bước 7:Phát triển frontend và tích hợp hệ thống
+ ### Bước 7:Phát triển frontend và tích hợp hệ thống.
   1. Chỉnh sửa mã ngồn frontend
    - Mở tệp ` frontend/lib/main.dart` và thay thế nội dung bằng đoạn mã sau 
    ```
    import 'dart:convert';
+import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
-///Hàm main là điểm bắt đầu của ứng dụng
+/// Hàm main là điểm bắt đầu của ứng dụng
 void main() {
-  runApp(const MainApp()); //Chạy ứng dụng với Widget MainApp
+  runApp(const MainApp()); // Chạy ứng dụng với Widget MainApp
 }
 
-/// Widget MainApp là widget gốc của ứng dụng, sử dụng một StatelessWidget
+/// Widget MainApp là widget gốc của ứng dụng
 class MainApp extends StatelessWidget {
   const MainApp({super.key});
 
@@ -276,9 +247,7 @@ class MainApp extends StatelessWidget {
   }
 }
 
-///Widget MyHoamePage là trang chính của ứng dụng,sử dụng StatefulWidget
-///để quản lý trạng thái do có nội dung cần tahy đổi trên trang này
-
+/// Widget MyHomePage là trang chính của ứng dụng
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
 
@@ -286,25 +255,36 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-//Lớp State cho MyHomePage
+// Lớp State cho MyHomePage
 class _MyHomePageState extends State<MyHomePage> {
-  ///Controller để lấy dữ liêu từ Widget TextField
+  /// Controller để lấy dữ liệu từ Widget TextField
   final controller = TextEditingController();
 
   /// Biến để lưu thông điệp phản hồi từ server
   String responseMessage = '';
 
-  ///Hàm để gửi tệp lên tới sever
-  Future<void> sendName() async {
-    //Lấy tên từ TextFiled
-    final name = controller.text;
-    //Sau khi lấy được tên hiển thị xóa nội dung trong controller
-    controller.clear();
+  /// Sử dụng địa chỉ IP thích hợp cho backend
+  String getBackendUrl() {
+    if (kIsWeb) {
+      return 'http://localhost:5000'; // Đổi cổng từ 8080 sang 5000
+    } else if (Platform.isAndroid) {
+      return 'http://10.0.2.2:5000'; // cho emulator
+      // return 'http://192.168.1.x:5000'; // cho thiết bị thật khi truy cập qua LAN
+    } else {
+      return 'http://localhost:5000'; // Đổi cổng từ 8080 sang 5000
+    }
+  }
 
-    //Endpoint submit của sever
-    final url = Uri.parse('http://localhost:3000/api/v1/submit');
+  /// Hàm để gửi tên lên server
+  Future<void> sendName() async {
+    final name = controller.text; // Lấy tên từ TextField
+    controller.clear(); // Xóa nội dung trong controller
+    final backendUrl = getBackendUrl();
+
+    // Endpoint submit của server
+    final url = Uri.parse('$backendUrl/api/v1/submit');
     try {
-      //Gửi yêu cầu POST tới sever
+      // Gửi yêu cầu POST tới server
       final response = await http
           .post(
             url,
@@ -312,6 +292,7 @@ class _MyHomePageState extends State<MyHomePage> {
             body: json.encode({'name': name}),
           )
           .timeout(const Duration(seconds: 10));
+
       // Kiểm tra nếu phản hồi có nội dung
       if (response.body.isNotEmpty) {
         // Giải mã phản hồi từ server
@@ -328,7 +309,7 @@ class _MyHomePageState extends State<MyHomePage> {
         });
       }
     } catch (e) {
-      //Xử lý lỗi kết nối hoặc lỗi khác
+      // Xử lý lỗi kết nối hoặc lỗi khác
       setState(() {
         responseMessage = 'Đã xảy ra lỗi: ${e.toString()}';
       });
@@ -356,12 +337,13 @@ class _MyHomePageState extends State<MyHomePage> {
             Text(
               responseMessage,
               style: Theme.of(context).textTheme.titleLarge,
-            )
+            ),
           ],
         ),
       ),
     );
   }
 }
+
 
    ```
