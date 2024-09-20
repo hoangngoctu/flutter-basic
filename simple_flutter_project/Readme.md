@@ -344,6 +344,305 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 }
+   ```
 
+   ### Bước 8:Phát triển thêm frontend và backend
+   1. Chỉnh sửa backend
+   Nhận Dữ Liệu: Hàm `_submitHandler` giờ đây nhận và kiểm tra các trường mới: `studentId`, `name`, `class`, và `school`
 
    ```
+   import 'dart:convert';
+import 'dart:io';
+
+import 'package:shelf/shelf.dart';
+import 'package:shelf/shelf_io.dart';
+import 'package:shelf_router/shelf_router.dart';
+
+/// Cấu hình các routes
+final _router = Router(notFoundHandler: _notFoundHandler)
+  ..get('/', _rootHandler)
+  ..get('/api/v1/check', _checkHandler)
+  ..get('/api/v1/echo/<message>', _echoHandler)
+  ..post('/api/v1/submit', _submitHandler);
+
+/// Header mặc định cho dữ liệu trả về dưới dạng JSON
+final _headers = {'Content-Type': 'application/json'};
+
+/// Xử lý các yêu cầu dẫn đến các đường dẫn không được định nghĩa (404 Not Found)
+Response _notFoundHandler(Request req) {
+  return Response.notFound('Không tìm thấy đường dẫn "${req.url}" trên server');
+}
+
+/// Hàm xử lý các yêu cầu gốc tại đường dẫn "/"
+Response _rootHandler(Request req) {
+  return Response.ok(
+    json.encode({'message': 'Hello, World!'}),
+    headers: _headers,
+  );
+}
+
+/// Hàm xử lý yêu cầu tại đường dẫn `/api/v1/check`
+Response _checkHandler(Request req) {
+  return Response.ok(
+    json.encode({'message': 'Chào mừng bạn đến với ứng dụng web di động'}),
+    headers: _headers,
+  );
+}
+
+Response _echoHandler(Request request) {
+  final message = request.params['message'];
+  return Response.ok('$message\n');
+}
+
+Future<Response> _submitHandler(Request req) async {
+  try {
+    /// Đọc payload từ request
+    final payload = await req.readAsString();
+
+    // Giải mã JSON từ payload
+    final data = json.decode(payload);
+
+    // Lấy các giá trị từ data
+    final studentId = data['studentId'] as String?;
+    final name = data['name'] as String?;
+    final className = data['class'] as String?;
+    final schoolName = data['school'] as String?;
+
+    // Kiểm tra tính hợp lệ của các trường
+    if (studentId != null &&
+        studentId.isNotEmpty &&
+        name != null &&
+        name.isNotEmpty &&
+        className != null &&
+        className.isNotEmpty &&
+        schoolName != null &&
+        schoolName.isNotEmpty) {
+      // Tạo phản hồi chào mừng
+      final response = {
+        'message':
+            'Thông tin đã nhận: Mã sinh viên: $studentId, Tên: $name, Lớp: $className, Trường: $schoolName'
+      };
+
+      return Response.ok(
+        json.encode(response),
+        headers: _headers,
+      );
+    } else {
+      final response = {'message': 'Vui lòng cung cấp đầy đủ thông tin.'};
+      return Response.badRequest(
+        body: json.encode(response),
+        headers: _headers,
+      );
+    }
+  } catch (e) {
+    final response = {'message': 'Yêu cầu không hợp lệ. Lỗi: ${e.toString()}'};
+    return Response.badRequest(
+      body: json.encode(response),
+      headers: _headers,
+    );
+  }
+}
+
+void main(List<String> args) async {
+  // Lắng nghe trên tất cả các địa chỉ IPV4
+  final ip = InternetAddress.anyIPv4;
+
+  final corsHeader = createMiddleware(
+    requestHandler: (req) {
+      if (req.method == 'OPTIONS') {
+        return Response.ok('', headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, HEAD',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        });
+      }
+      return null; // Tiếp tục xử lý các yêu cầu khác
+    },
+    responseHandler: (res) {
+      return res.change(headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, HEAD',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      });
+    },
+  );
+
+  final handler = Pipeline()
+      .addMiddleware(corsHeader)
+      .addMiddleware(logRequests())
+      .addHandler(_router.call);
+
+  // Để chạy trong các container, chúng ta sẽ sử dụng biến môi trường PORT.
+  final port = int.parse(Platform.environment['PORT'] ?? '5000');
+
+  // Khởi chạy server tại địa chỉ và cổng chỉ định
+  final server = await serve(handler, ip, port);
+  print('Server đang chạy tại http://${server.address.host}:${server.port}');
+}
+
+   ```
+2. Chỉnh sửa frondend
+
+ - Controllers Mới: Đã thêm các `TextEditingController` cho mã sinh viên, tên, lớp và tên trường.
+Gửi Dữ Liệu: Hàm `sendData`sẽ gửi tất cả các thông tin này đến server.
+ - Giao Diện: Thêm các trường nhập để người dùng có thể nhập mã sinh viên, tên, lớp và tên trường.
+
+```
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+
+/// Hàm main là điểm bắt đầu của ứng dụng
+void main() {
+  runApp(const MainApp()); // Chạy ứng dụng với Widget MainApp
+}
+
+/// Widget MainApp là widget gốc của ứng dụng
+class MainApp extends StatelessWidget {
+  const MainApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      debugShowCheckedModeBanner: false, // Tắt biểu tượng debug ở góc phải trên
+      title: 'Ứng dụng full-stack flutter đơn giản',
+      home: MyHomePage(),
+    );
+  }
+}
+
+/// Widget MyHomePage là trang chính của ứng dụng
+class MyHomePage extends StatefulWidget {
+  const MyHomePage({super.key});
+
+  @override
+  State<MyHomePage> createState() => _MyHomePageState();
+}
+
+// Lớp State cho MyHomePage
+class _MyHomePageState extends State<MyHomePage> {
+  /// Controllers để lấy dữ liệu từ Widget TextField
+  final studentIdController = TextEditingController();
+  final nameController = TextEditingController();
+  final classController = TextEditingController();
+  final schoolNameController = TextEditingController();
+
+  /// Biến để lưu thông điệp phản hồi từ server
+  String responseMessage = '';
+
+  /// Sử dụng địa chỉ IP thích hợp cho backend
+  String getBackendUrl() {
+    if (kIsWeb) {
+      return 'http://localhost:5000'; // Đổi cổng từ 8080 sang 5000
+    } else if (Platform.isAndroid) {
+      return 'http://10.0.2.2:5000'; // cho emulator
+      // return 'http://192.168.1.x:5000'; // cho thiết bị thật khi truy cập qua LAN
+    } else {
+      return 'http://localhost:5000'; // Đổi cổng từ 8080 sang 5000
+    }
+  }
+
+  /// Hàm để gửi thông tin lên server
+  Future<void> sendData() async {
+    // Lấy thông tin từ các TextField
+    final studentId = studentIdController.text;
+    final name = nameController.text;
+    final className = classController.text;
+    final schoolName = schoolNameController.text;
+
+    // Xóa nội dung trong các controller
+    studentIdController.clear();
+    nameController.clear();
+    classController.clear();
+    schoolNameController.clear();
+
+    final backendUrl = getBackendUrl();
+
+    // Endpoint submit của server
+    final url = Uri.parse('$backendUrl/api/v1/submit');
+    try {
+      // Gửi yêu cầu POST tới server
+      final response = await http
+          .post(
+            url,
+            headers: {'Content-Type': 'application/json'},
+            body: json.encode({
+              'studentId': studentId,
+              'name': name,
+              'class': className,
+              'school': schoolName,
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      // Kiểm tra nếu phản hồi có nội dung
+      if (response.body.isNotEmpty) {
+        // Giải mã phản hồi từ server
+        final data = json.decode(response.body);
+
+        // Cập nhật trạng thái với thông điệp nhận được từ server
+        setState(() {
+          responseMessage = data['message'];
+        });
+      } else {
+        // Phản hồi không có nội dung
+        setState(() {
+          responseMessage = 'Không nhận được phản hồi từ server';
+        });
+      }
+    } catch (e) {
+      // Xử lý lỗi kết nối hoặc lỗi khác
+      setState(() {
+        responseMessage = 'Đã xảy ra lỗi: ${e.toString()}';
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Ứng dụng full-stack flutter đơn giản')),
+      body: Padding(
+        padding: const EdgeInsets.all(18.0),
+        child: Column(
+          children: [
+            TextField(
+              controller: studentIdController,
+              decoration: const InputDecoration(labelText: 'Mã sinh viên'),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(labelText: 'Tên'),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: classController,
+              decoration: const InputDecoration(labelText: 'Lớp'),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: schoolNameController,
+              decoration: const InputDecoration(labelText: 'Tên trường'),
+            ),
+            const SizedBox(height: 20),
+            FilledButton(
+              onPressed: sendData,
+              child: const Text('Gửi'),
+            ),
+            // Hiển thị thông điệp phản hồi từ server
+            Text(
+              responseMessage,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+```
