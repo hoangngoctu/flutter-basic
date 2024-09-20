@@ -34,8 +34,11 @@ class MyHomePage extends StatefulWidget {
 
 // Lớp State cho MyHomePage
 class _MyHomePageState extends State<MyHomePage> {
-  /// Controller để lấy dữ liệu từ Widget TextField
-  final controller = TextEditingController();
+  /// Controllers để lấy dữ liệu từ Widget TextField
+  final studentIdController = TextEditingController();
+  final nameController = TextEditingController();
+  final classController = TextEditingController();
+  final schoolNameController = TextEditingController();
 
   /// Biến để lưu thông điệp phản hồi từ server
   String responseMessage = '';
@@ -52,10 +55,20 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  /// Hàm để gửi tên lên server
-  Future<void> sendName() async {
-    final name = controller.text; // Lấy tên từ TextField
-    controller.clear(); // Xóa nội dung trong controller
+  /// Hàm để gửi thông tin lên server
+  Future<void> sendData() async {
+    // Lấy thông tin từ các TextField
+    final studentId = studentIdController.text;
+    final name = nameController.text;
+    final className = classController.text;
+    final schoolName = schoolNameController.text;
+
+    // Xóa nội dung trong các controller
+    studentIdController.clear();
+    nameController.clear();
+    classController.clear();
+    schoolNameController.clear();
+
     final backendUrl = getBackendUrl();
 
     // Endpoint submit của server
@@ -66,7 +79,12 @@ class _MyHomePageState extends State<MyHomePage> {
           .post(
             url,
             headers: {'Content-Type': 'application/json'},
-            body: json.encode({'name': name}),
+            body: json.encode({
+              'studentId': studentId,
+              'name': name,
+              'class': className,
+              'school': schoolName,
+            }),
           )
           .timeout(const Duration(seconds: 10));
 
@@ -102,12 +120,27 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Column(
           children: [
             TextField(
-              controller: controller,
+              controller: studentIdController,
+              decoration: const InputDecoration(labelText: 'Mã sinh viên'),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: nameController,
               decoration: const InputDecoration(labelText: 'Tên'),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: classController,
+              decoration: const InputDecoration(labelText: 'Lớp'),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: schoolNameController,
+              decoration: const InputDecoration(labelText: 'Tên trường'),
             ),
             const SizedBox(height: 20),
             FilledButton(
-              onPressed: sendName,
+              onPressed: sendData,
               child: const Text('Gửi'),
             ),
             // Hiển thị thông điệp phản hồi từ server

@@ -49,20 +49,33 @@ Future<Response> _submitHandler(Request req) async {
     // Giải mã JSON từ payload
     final data = json.decode(payload);
 
-    // Lấy giá trị 'name' từ data
+    // Lấy các giá trị từ data
+    final studentId = data['studentId'] as String?;
     final name = data['name'] as String?;
+    final className = data['class'] as String?;
+    final schoolName = data['school'] as String?;
 
-    // Kiểm tra 'name' hợp lệ
-    if (name != null && name.isNotEmpty) {
+    // Kiểm tra tính hợp lệ của các trường
+    if (studentId != null &&
+        studentId.isNotEmpty &&
+        name != null &&
+        name.isNotEmpty &&
+        className != null &&
+        className.isNotEmpty &&
+        schoolName != null &&
+        schoolName.isNotEmpty) {
       // Tạo phản hồi chào mừng
-      final response = {'message': 'Chào mừng $name'};
+      final response = {
+        'message':
+            'Thông tin đã nhận: Mã sinh viên: $studentId, Tên: $name, Lớp: $className, Trường: $schoolName'
+      };
 
       return Response.ok(
         json.encode(response),
         headers: _headers,
       );
     } else {
-      final response = {'message': 'Server không nhận được tên của bạn.'};
+      final response = {'message': 'Vui lòng cung cấp đầy đủ thông tin.'};
       return Response.badRequest(
         body: json.encode(response),
         headers: _headers,
@@ -107,10 +120,9 @@ void main(List<String> args) async {
       .addHandler(_router.call);
 
   // Để chạy trong các container, chúng ta sẽ sử dụng biến môi trường PORT.
-  // Nếu biến môi trường không được thiết lập nó sẽ sử dụng giá trị từ biến
-  // môi trường này sử dụng giá trị là 5000; nếu không, nó sẽ sử dụng giá trị mặc định là 8080.
   final port = int.parse(Platform.environment['PORT'] ?? '5000');
-// Khởi chạy server tại địa chỉ và cổng chỉ định
+
+  // Khởi chạy server tại địa chỉ và cổng chỉ định
   final server = await serve(handler, ip, port);
   print('Server đang chạy tại http://${server.address.host}:${server.port}');
 }
